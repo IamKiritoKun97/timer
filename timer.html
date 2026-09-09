@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,31 +7,20 @@
     <title>Focus Timer</title>
     <style>
         :root {
-            /* Premium Neutral Palette */
-            --bg-color: #fbfbfa;
-            --surface-color: #ffffff;
-            --text-main: #1a1a1a;
-            --text-muted: #737373;
-            --border-color: #e5e5e5;
-            --accent-color: #0f172a;
-            --accent-hover: #334155;
-            --focus-ring: rgba(15, 23, 42, 0.2);
-            --done-color: #059669; /* Subtle green for completion */
-            --done-bg: #ecfdf5;
-            
-            /* Typography */
-            --font-stack: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            
-            /* Spacing & Layout */
-            --radius-md: 12px;
-            --radius-lg: 24px;
-            --shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
-            --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
-            
-            /* Transitions */
-            --transition-fast: 0.15s ease;
-            --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Premium Dark Theme */
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --surface-hover: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #38bdf8;
+            --accent-hover: #7dd3fc;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --border-radius: 1rem;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
         * {
@@ -40,533 +30,662 @@
         }
 
         body {
-            font-family: var(--font-stack);
             background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: var(--text-primary);
+            font-family: var(--font-family);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Center vertically */
+            padding: 2rem 1rem;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overflow-x: hidden;
-            line-height: 1.5;
         }
 
-        .app-container {
+        header {
+            margin-bottom: 2rem;
+            text-align: center;
             width: 100%;
-            max-width: 600px;
-            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            color: var(--text-primary);
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        /* Timer Controls / Buttons */
+        .controls-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: center;
+            max-width: 800px;
+            margin-bottom: 2.5rem;
+        }
+
+        .duration-btn {
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            outline: none;
+            user-select: none;
+        }
+
+        .duration-btn:hover, .duration-btn:focus-visible {
+            background-color: var(--surface-hover);
+            transform: translateY(-1px);
+        }
+
+        .duration-btn:focus-visible {
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.5);
+        }
+
+        .duration-btn.active {
+            background-color: rgba(56, 189, 248, 0.15);
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        /* Timer Display Area */
+        .timers-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 250px;
+        }
+
+        .timers-container {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .timers-container.multi {
+            max-width: 950px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .timers-container.multi {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 900px) {
+            .timers-container.multi {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            font-size: 6rem;
+            font-weight: 200;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-secondary);
+            text-align: center;
+            opacity: 0.3;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        .empty-state.hidden {
+            display: none;
+        }
+
+        /* Timer Cards */
+        .timer-card {
+            background-color: var(--surface-color);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
             position: relative;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 100%;
         }
 
-        header {
-            margin-bottom: 3rem;
-            text-align: center;
-            height: 24px; /* Fixed height to prevent layout shift */
+        .timer-card:hover {
+            transform: translateY(-2px);
+            background-color: var(--surface-hover);
+        }
+        
+        .timer-card:focus-visible {
+            outline: 3px solid var(--accent-color);
+            outline-offset: 2px;
         }
 
-        h1 {
-            font-size: 0.875rem;
-            font-weight: 500;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            opacity: 1;
-            transition: opacity var(--transition-smooth);
+        .timer-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
         }
 
-        .status-text {
+        .timer-label {
             font-size: 0.875rem;
             font-weight: 600;
-            color: var(--done-color);
+            color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity var(--transition-smooth);
-            pointer-events: none;
-            background-color: var(--done-bg);
-            padding: 4px 12px;
-            border-radius: 999px;
         }
 
-        /* Toggle status visibility based on parent class */
-        header.is-done h1 { opacity: 0; }
-        header.is-done .status-text { opacity: 1; }
-
-        .display-container {
-            position: relative;
-            margin-bottom: 4rem;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .time-display {
-            font-family: var(--font-mono);
-            font-size: clamp(5rem, 15vw, 8rem);
-            font-weight: 300;
-            letter-spacing: -0.02em;
-            line-height: 1;
-            color: var(--text-main);
-            font-variant-numeric: tabular-nums; /* Prevents jumping */
-            transition: color var(--transition-smooth), transform var(--transition-smooth);
-        }
-
-        /* Subtle pulse effect for completion */
-        @keyframes subtle-pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
-        }
-
-        .time-display.is-done {
-            color: var(--done-color);
-            animation: subtle-pulse 2s ease-in-out;
-        }
-
-        .controls-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr); /* Changed to 6 columns for the new option */
-            gap: 0.75rem;
-            width: 100%;
-            background: var(--surface-color);
-            padding: 0.75rem;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-subtle);
-            border: 1px solid var(--border-color);
-            margin-bottom: 1.5rem; /* Added margin for the action buttons */
-        }
-
-        .timer-btn {
-            background: transparent;
+        .timer-close {
+            background: none;
             border: none;
-            padding: 1rem 0.5rem;
-            border-radius: var(--radius-md);
-            font-family: var(--font-stack);
-            font-size: 0.9375rem;
-            font-weight: 500;
-            color: var(--text-muted);
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            line-height: 1;
             cursor: pointer;
-            transition: all var(--transition-fast);
-            position: relative;
-            outline: none;
+            padding: 0 0.5rem;
+            border-radius: 0.25rem;
+            transition: var(--transition);
         }
 
-        .timer-btn:hover {
-            color: var(--text-main);
-            background-color: rgba(0, 0, 0, 0.03);
+        .timer-close:hover {
+            color: var(--danger-color);
+            background-color: rgba(239, 68, 68, 0.1);
         }
 
-        .timer-btn:focus-visible {
-            box-shadow: 0 0 0 3px var(--focus-ring);
-            color: var(--text-main);
+        .timer-time {
+            font-size: 4rem;
+            font-weight: 300;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+            margin: 0.5rem 0;
+            color: var(--text-primary);
+            transition: var(--transition);
         }
 
-        .timer-btn:active {
-            transform: scale(0.97);
+        /* Single timer typography logic */
+        .timers-container:not(.multi) .timer-card {
+            max-width: 450px;
+        }
+        
+        .timers-container:not(.multi) .timer-time {
+            font-size: 5.5rem;
         }
 
-        .timer-btn.active {
-            background-color: var(--accent-color);
-            color: white;
-            box-shadow: var(--shadow-hover);
-        }
-
-        .timer-btn.active:hover {
-            background-color: var(--accent-hover);
-        }
-
-        .action-controls {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            opacity: 0; /* Hidden by default */
-            pointer-events: none;
-            transition: opacity var(--transition-smooth);
-        }
-
-        .action-controls.is-visible {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .action-btn {
-            background: var(--surface-color);
-            border: 1px solid var(--border-color);
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--radius-lg);
-            font-family: var(--font-stack);
+        .timer-status {
             font-size: 0.875rem;
             font-weight: 500;
-            color: var(--text-main);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            box-shadow: var(--shadow-subtle);
-            outline: none;
-            min-width: 100px;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            min-height: 1.25rem;
         }
 
-        .action-btn:hover {
-            border-color: var(--text-muted);
+        /* Status Icon SVG */
+        .status-icon {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
         }
 
-        .action-btn:focus-visible {
-            box-shadow: 0 0 0 3px var(--focus-ring);
+        /* States */
+        .timer-card.paused {
+            opacity: 0.8;
+            border-style: dashed;
+        }
+        .timer-card.paused .timer-status {
+            color: var(--warning-color);
+        }
+        .timer-card.paused .timer-time {
+            color: var(--text-secondary);
         }
 
-        .action-btn:active {
-            transform: scale(0.97);
+        .timer-card.completed {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-color: var(--success-color);
+            animation: pulse-green 2s infinite;
+        }
+        .timer-card.completed .timer-time {
+            color: var(--success-color);
+            font-weight: 400;
+        }
+        .timer-card.completed .timer-status {
+            color: var(--success-color);
         }
 
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
 
+        /* Screen Reader Only */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        
+        /* Mobile Stacking Optimization */
         @media (max-width: 480px) {
-            .app-container {
-                padding: 1.5rem;
+            .timers-container:not(.multi) .timer-time {
+                font-size: 4.5rem;
             }
-            
-            .controls-grid {
-                grid-template-columns: repeat(3, 1fr); /* Better fit on mobile */
-                gap: 0.5rem;
-                padding: 0.5rem;
-                border-radius: calc(var(--radius-lg) - 4px);
-            }
-            
-            .timer-btn {
-                padding: 0.875rem 0.25rem;
-                font-size: 0.875rem;
-                border-radius: calc(var(--radius-md) - 2px);
-            }
-        }
-
-        /* Support for reduced motion */
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-                scroll-behavior: auto !important;
-            }
-            .timer-btn:active {
-                transform: none;
+            .timer-time {
+                font-size: 3.5rem;
             }
         }
     </style>
 </head>
 <body>
 
-    <main class="app-container">
-        
-        <header id="app-header">
-            <h1>Focus Timer</h1>
-            <div class="status-text" aria-live="polite">Done</div>
-        </header>
+    <header>
+        <h1>Focus Timer</h1>
+    </header>
 
-        <div class="display-container">
-            <div id="time-display" class="time-display" role="timer" aria-live="assertive">00:00</div>
-        </div>
-
-        <nav class="controls-grid" aria-label="Timer durations">
-            <button class="timer-btn" data-seconds="60" aria-label="Start 1 minute timer">1 MIN</button>
-            <button class="timer-btn" data-seconds="90" aria-label="Start 1 minute 30 seconds timer">1:30</button>
-            <button class="timer-btn" data-seconds="120" aria-label="Start 2 minute timer">2 MIN</button>
-            <button class="timer-btn" data-seconds="180" aria-label="Start 3 minute timer">3 MIN</button>
-            <button class="timer-btn" data-seconds="240" aria-label="Start 4 minute timer">4 MIN</button>
-            <button class="timer-btn" data-seconds="300" aria-label="Start 5 minute timer">5 MIN</button>
+    <main>
+        <nav class="controls-container" aria-label="Timer Durations">
+            <!-- Data duration is in seconds -->
+            <button class="duration-btn" data-id="60" data-duration="60">1 MIN</button>
+            <button class="duration-btn" data-id="90" data-duration="90">1:30</button>
+            <button class="duration-btn" data-id="120" data-duration="120">2 MIN</button>
+            <button class="duration-btn" data-id="180" data-duration="180">3 MIN</button>
+            <button class="duration-btn" data-id="240" data-duration="240">4 MIN</button>
+            <button class="duration-btn" data-id="300" data-duration="300">5 MIN</button>
         </nav>
 
-        <div class="action-controls" id="action-controls">
-            <button class="action-btn" id="pause-resume-btn" aria-label="Pause timer">Pause</button>
+        <div class="timers-wrapper">
+            <div id="timers-container" class="timers-container">
+                <div id="empty-state" class="empty-state" aria-hidden="true">00:00</div>
+                <!-- Timer cards will be injected here -->
+            </div>
         </div>
-
     </main>
 
+    <!-- Accessibility Announcer -->
+    <div id="announcer" class="sr-only" aria-live="polite"></div>
+
     <script>
-        // State variables
-        let countdownInterval;
-        let targetTimestamp;
-        let isRunning = false;
-        let isPaused = false;
-        let remainingTimeWhenPaused = 0;
-        let currentDuration = 0;
-        
+        /**
+         * State Architecture
+         * Using a Map to ensure independent state for every timer.
+         */
+        const timers = new Map();
+        let globalLoopId = null;
+        let audioCtx = null;
+
         // DOM Elements
-        const displayEl = document.getElementById('time-display');
-        const headerEl = document.getElementById('app-header');
-        const buttons = document.querySelectorAll('.timer-btn');
-        const actionControlsEl = document.getElementById('action-controls');
-        const pauseResumeBtn = document.getElementById('pause-resume-btn');
-        
-        // Audio Context (initialized on user interaction)
-        let audioCtx;
+        const timersContainer = document.getElementById('timers-container');
+        const emptyState = document.getElementById('empty-state');
+        const announcer = document.getElementById('announcer');
+        const durationButtons = document.querySelectorAll('.duration-btn');
 
-        /**
-         * STREAMING_CHUNK:Formatting time helper
-         * Formats total seconds into MM:SS string
-         */
-        function formatTime(totalSeconds) {
-            const m = Math.floor(totalSeconds / 60);
-            const s = totalSeconds % 60;
-            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        }
+        // SVG Icons for Status
+        const ICONS = {
+            play: `<svg class="status-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`,
+            pause: `<svg class="status-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`,
+            check: `<svg class="status-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`
+        };
 
-        /**
-         * STREAMING_CHUNK:Updating the display
-         * Updates the visual DOM elements
-         */
-        function updateDisplay(seconds) {
-            displayEl.textContent = formatTime(seconds);
-            // Update document title for background tracking
-            
-            let titlePrefix = formatTime(seconds);
-            if (isPaused) {
-                titlePrefix = `(Paused) ${titlePrefix}`;
-            }
-            document.title = `${titlePrefix} - Focus Timer`;
-        }
-
-        /**
-         * STREAMING_CHUNK:Web Audio API alarm implementation (Annoying version)
-         * Generates an annoying, harsh repeating tone 3 times
-         */
-        function playAlarm() {
-            // Initialize AudioContext if not already done (requires user gesture first)
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            
-            // Ensure context is running
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-
-            const now = audioCtx.currentTime;
-            
-            // Play 3 annoying buzzes
-            for (let i = 0; i < 3; i++) {
-                const startTime = now + (i * 0.5); // Space them out every 0.5 seconds
+        // Initialize Event Listeners
+        durationButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const duration = parseInt(btn.getAttribute('data-duration'), 10);
+                const label = btn.textContent;
                 
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                
-                // Sawtooth is generally considered harsh/annoying
-                osc.type = 'sawtooth'; 
-                osc.frequency.setValueAtTime(3000, startTime); // High pitch
-                // Modulate frequency quickly for a siren/buzz effect
-                osc.frequency.exponentialRampToValueAtTime(1000, startTime + 0.2);
-                
-                // Sharp attack, abrupt release
-                gain.gain.setValueAtTime(0, startTime);
-                gain.gain.linearRampToValueAtTime(0.8, startTime + 0.02);
-                gain.gain.linearRampToValueAtTime(0, startTime + 0.3);
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start(startTime);
-                osc.stop(startTime + 0.35);
-            }
-        }
-
-        /**
-         * STREAMING_CHUNK:Web Audio API alarm implementation
-         * Generates a pleasant, clean dual-tone sequence programmatically
-         */
-        function playAlarm() {
-            // Initialize AudioContext if not already done (requires user gesture first)
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            
-            // Ensure context is running (fixes autoplay policies in some browsers)
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-
-            const now = audioCtx.currentTime;
-            
-            // Tone 1 (High bell)
-            const osc1 = audioCtx.createOscillator();
-            const gain1 = audioCtx.createGain();
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(880, now); // A5
-            
-            // Envelope for Tone 1
-            gain1.gain.setValueAtTime(0, now);
-            gain1.gain.linearRampToValueAtTime(0.5, now + 0.05); // Attack
-            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6); // Decay/Release
-            
-            osc1.connect(gain1);
-            gain1.connect(audioCtx.destination);
-            
-            osc1.start(now);
-            osc1.stop(now + 0.6);
-
-            // Tone 2 (Higher bell, delayed slightly)
-            const osc2 = audioCtx.createOscillator();
-            const gain2 = audioCtx.createGain();
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(1046.50, now + 0.2); // C6
-            
-            // Envelope for Tone 2
-            gain2.gain.setValueAtTime(0, now + 0.2);
-            gain2.gain.linearRampToValueAtTime(0.4, now + 0.25); // Attack
-            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8); // Decay/Release
-            
-            osc2.connect(gain2);
-            gain2.connect(audioCtx.destination);
-            
-            osc2.start(now + 0.2);
-            osc2.stop(now + 0.8);
-        }
-
-        /**
-         * STREAMING_CHUNK:Handling completion state
-         * Triggers when timer reaches 0
-         */
-        function finishTimer() {
-            stopTimer();
-            updateDisplay(0);
-            
-            // Visual feedback
-            displayEl.classList.add('is-done');
-            headerEl.classList.add('is-done');
-            actionControlsEl.classList.remove('is-visible');
-            document.title = "Done - Focus Timer";
-            
-            // Remove active button states
-            buttons.forEach(b => b.classList.remove('active'));
-            
-            // Audio feedback
-            playAlarm();
-        }
-
-        /**
-         * STREAMING_CHUNK:Stopping the timer loop
-         */
-        function stopTimer() {
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
-            isRunning = false;
-            isPaused = false;
-        }
-
-        /**
-         * STREAMING_CHUNK:Toggle Pause/Resume
-         */
-        function togglePause() {
-            if (!isRunning && !isPaused) return;
-
-            if (isPaused) {
-                // Resume
-                isPaused = false;
-                targetTimestamp = Date.now() + (remainingTimeWhenPaused * 1000);
-                pauseResumeBtn.textContent = "Pause";
-                pauseResumeBtn.setAttribute('aria-label', 'Pause timer');
-                
-                // Restart interval loop
-                startIntervalLoop();
-                updateDisplay(remainingTimeWhenPaused); // Force update to remove "(Paused)" from title
-            } else {
-                // Pause
-                isPaused = true;
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-                
-                // Calculate exactly how much time is left when paused
-                const now = Date.now();
-                remainingTimeWhenPaused = Math.max(0, (targetTimestamp - now) / 1000);
-                
-                pauseResumeBtn.textContent = "Resume";
-                pauseResumeBtn.setAttribute('aria-label', 'Resume timer');
-                updateDisplay(Math.round(remainingTimeWhenPaused)); // Update to add "(Paused)" to title
-            }
-        }
-
-        /**
-         * STREAMING_CHUNK:Interval Loop Logic
-         */
-        function startIntervalLoop() {
-            if (countdownInterval) clearInterval(countdownInterval);
-            
-            countdownInterval = setInterval(() => {
-                const now = Date.now();
-                const remainingMilliseconds = targetTimestamp - now;
-                const remainingSeconds = Math.round(remainingMilliseconds / 1000);
-
-                if (remainingSeconds <= 0) {
-                    finishTimer();
-                } else {
-                    updateDisplay(remainingSeconds);
-                }
-            }, 200);
-        }
-
-        /**
-         * STREAMING_CHUNK:Main timer logic
-         * Starts a new countdown using absolute timestamps to prevent drifting
-         */
-        function startTimer(seconds, buttonEl) {
-            // Initialize audio context on first user interaction to satisfy browser policies
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-
-            stopTimer(); // Cancel any existing timer
-            
-            // Reset visual states
-            displayEl.classList.remove('is-done');
-            headerEl.classList.remove('is-done');
-            
-            // Update button UI
-            buttons.forEach(b => b.classList.remove('active'));
-            if (buttonEl) buttonEl.classList.add('active');
-
-            // Show action controls and reset pause button
-            actionControlsEl.classList.add('is-visible');
-            pauseResumeBtn.textContent = "Pause";
-            pauseResumeBtn.setAttribute('aria-label', 'Pause timer');
-
-            // Setup new timer parameters
-            currentDuration = seconds;
-            targetTimestamp = Date.now() + (seconds * 1000);
-            isRunning = true;
-            isPaused = false;
-            
-            // Immediate first update
-            updateDisplay(seconds);
-
-            // Start interval loop
-            startIntervalLoop();
-        }
-
-        /**
-         * STREAMING_CHUNK:Event Listeners setup
-         */
-        buttons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                // Changed from data-minutes to data-seconds to handle 1:30 easily
-                const seconds = parseInt(e.target.getAttribute('data-seconds'), 10);
-                if (seconds && !isNaN(seconds)) {
-                    startTimer(seconds, e.target);
-                }
+                handleTimerInteraction(id, duration, label, btn);
             });
         });
 
-        pauseResumeBtn.addEventListener('click', togglePause);
+        /**
+         * Core Timer Logic Functions
+         */
 
-        // Initialize display to zero state on load without triggering alarms
-        updateDisplay(0);
+        function handleTimerInteraction(id, duration, label, btn) {
+            const timer = timers.get(id);
 
+            // If timer doesn't exist or is already completed, start/restart it
+            if (!timer || timer.isCompleted) {
+                startTimer(id, duration, label, btn);
+            } 
+            // If running, pause it
+            else if (timer.isRunning) {
+                pauseTimer(id);
+            } 
+            // If paused, resume it
+            else if (timer.isPaused) {
+                resumeTimer(id);
+            }
+        }
+
+        function startTimer(id, duration, label, btnElement) {
+            // Initialize Audio Context on first interaction
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const state = {
+                id,
+                duration,
+                remaining: duration,
+                targetTimestamp: Date.now() + (duration * 1000),
+                isRunning: true,
+                isPaused: false,
+                isCompleted: false,
+                pausedRemaining: 0,
+                label,
+                btnElement
+            };
+
+            timers.set(id, state);
+            
+            // Visual Updates
+            btnElement.classList.add('active');
+            btnElement.setAttribute('aria-pressed', 'true');
+            
+            ensureCardExists(state);
+            updateLayout();
+            renderTimer(id);
+            startGlobalLoop();
+        }
+
+        function pauseTimer(id) {
+            const timer = timers.get(id);
+            if (!timer) return;
+
+            timer.isRunning = false;
+            timer.isPaused = true;
+            // Freeze remaining time exactly
+            timer.pausedRemaining = timer.targetTimestamp - Date.now();
+            
+            renderTimer(id);
+            updateDocumentTitle();
+        }
+
+        function resumeTimer(id) {
+            const timer = timers.get(id);
+            if (!timer) return;
+
+            timer.isRunning = true;
+            timer.isPaused = false;
+            // Shift target timestamp forward by the duration it was paused
+            timer.targetTimestamp = Date.now() + timer.pausedRemaining;
+            
+            renderTimer(id);
+            updateDocumentTitle();
+            startGlobalLoop();
+        }
+
+        function finishTimer(id) {
+            const timer = timers.get(id);
+            if (!timer) return;
+
+            timer.isRunning = false;
+            timer.isCompleted = true;
+            timer.remaining = 0;
+            
+            renderTimer(id);
+            playAlarm();
+            
+            // Accessibility Announcement
+            announcer.textContent = `${timer.label} timer completed.`;
+            
+            updateDocumentTitle();
+        }
+
+        function removeTimer(id) {
+            const timer = timers.get(id);
+            if (!timer) return;
+
+            // Remove active styling from button
+            if (timer.btnElement) {
+                timer.btnElement.classList.remove('active');
+                timer.btnElement.setAttribute('aria-pressed', 'false');
+            }
+
+            // Remove DOM element
+            const card = document.getElementById(`timer-card-${id}`);
+            if (card) {
+                card.remove();
+            }
+
+            timers.delete(id);
+            updateLayout();
+            updateDocumentTitle();
+
+            if (timers.size === 0) {
+                stopGlobalLoop();
+            }
+        }
+
+        /**
+         * Central Update Loop
+         */
+        function startGlobalLoop() {
+            if (!globalLoopId) {
+                globalLoopId = setInterval(updateAllTimers, 200);
+            }
+        }
+
+        function stopGlobalLoop() {
+            if (globalLoopId) {
+                clearInterval(globalLoopId);
+                globalLoopId = null;
+            }
+        }
+
+        function updateAllTimers() {
+            const now = Date.now();
+            let anyRunning = false;
+
+            for (const [id, timer] of timers.entries()) {
+                if (timer.isRunning) {
+                    anyRunning = true;
+                    const remainingMs = timer.targetTimestamp - now;
+                    
+                    if (remainingMs <= 0) {
+                        finishTimer(id);
+                    } else {
+                        // Update remaining seconds based on accurate timestamp diff
+                        timer.remaining = Math.ceil(remainingMs / 1000);
+                        renderTimer(id);
+                    }
+                }
+            }
+
+            if (anyRunning) {
+                updateDocumentTitle();
+            } else {
+                stopGlobalLoop(); // Save CPU if nothing is running
+            }
+        }
+
+        /**
+         * UI Rendering & Formatting
+         */
+        
+        function formatTime(seconds) {
+            if (seconds <= 0) return "00:00";
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function ensureCardExists(timer) {
+            let card = document.getElementById(`timer-card-${timer.id}`);
+            if (!card) {
+                card = document.createElement('div');
+                card.id = `timer-card-${timer.id}`;
+                card.className = 'timer-card';
+                card.setAttribute('tabindex', '0');
+                card.setAttribute('role', 'button');
+                card.setAttribute('aria-label', `${timer.label} timer. Click to pause or resume.`);
+                
+                card.innerHTML = `
+                    <div class="timer-header">
+                        <span class="timer-label">${timer.label}</span>
+                        <button class="timer-close" aria-label="Close ${timer.label} timer" title="Dismiss">×</button>
+                    </div>
+                    <div class="timer-time" aria-hidden="true"></div>
+                    <div class="timer-status"></div>
+                `;
+
+                // Events
+                card.addEventListener('click', () => {
+                    handleTimerInteraction(timer.id, timer.duration, timer.label, timer.btnElement);
+                });
+
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleTimerInteraction(timer.id, timer.duration, timer.label, timer.btnElement);
+                    }
+                });
+
+                card.querySelector('.timer-close').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent card click
+                    removeTimer(timer.id);
+                });
+
+                timersContainer.appendChild(card);
+            }
+        }
+
+        function renderTimer(id) {
+            const timer = timers.get(id);
+            const card = document.getElementById(`timer-card-${id}`);
+            if (!timer || !card) return;
+
+            const timeEl = card.querySelector('.timer-time');
+            const statusEl = card.querySelector('.timer-status');
+
+            // Set time text
+            timeEl.textContent = formatTime(timer.remaining);
+
+            // Reset classes
+            card.className = 'timer-card';
+
+            // Apply specific state class & status text
+            if (timer.isCompleted) {
+                card.classList.add('completed');
+                statusEl.innerHTML = `${ICONS.check} Done`;
+            } else if (timer.isPaused) {
+                card.classList.add('paused');
+                statusEl.innerHTML = `${ICONS.pause} Paused`;
+            } else if (timer.isRunning) {
+                card.classList.add('running');
+                statusEl.innerHTML = `${ICONS.play} Running`;
+            }
+        }
+
+        function updateLayout() {
+            if (timers.size === 0) {
+                emptyState.classList.remove('hidden');
+                timersContainer.classList.remove('multi');
+            } else {
+                emptyState.classList.add('hidden');
+                // Use multi-column grid layout if more than 1 timer
+                if (timers.size > 1) {
+                    timersContainer.classList.add('multi');
+                } else {
+                    timersContainer.classList.remove('multi');
+                }
+            }
+        }
+
+        function updateDocumentTitle() {
+            const activeTimers = Array.from(timers.values());
+            const runningCount = activeTimers.filter(t => t.isRunning).length;
+            const uncompletedTimers = activeTimers.filter(t => !t.isCompleted);
+
+            if (activeTimers.length === 0) {
+                document.title = "Focus Timer";
+                return;
+            }
+
+            if (uncompletedTimers.length === 0) {
+                document.title = "Done - Focus Timer";
+                return;
+            }
+
+            if (uncompletedTimers.length === 1 && uncompletedTimers[0].isRunning) {
+                // If only 1 timer is active and running, show its time
+                document.title = `${formatTime(uncompletedTimers[0].remaining)} - Focus Timer`;
+            } else if (runningCount > 0) {
+                // If multiple are running, show count
+                document.title = `${runningCount} Running - Focus Timer`;
+            } else {
+                // Things are paused
+                document.title = "Paused - Focus Timer";
+            }
+        }
+
+        /**
+         * Web Audio API implementation for pleasant dual-tone alarm
+         */
+        function playAlarm() {
+            if (!audioCtx) return; // Prevent errors if context failed
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // Dual tone harmony
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc1.type = 'sine';
+            osc2.type = 'triangle';
+            
+            // Pleasant chime frequencies (C6 and E6)
+            osc1.frequency.setValueAtTime(1046.50, audioCtx.currentTime); // C6
+            osc2.frequency.setValueAtTime(1318.51, audioCtx.currentTime); // E6
+            
+            // Envelope (Fade in and out)
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05); // Attack
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8); // Decay
+            
+            osc1.connect(gainNode);
+            osc2.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc1.start(audioCtx.currentTime);
+            osc2.start(audioCtx.currentTime);
+            
+            osc1.stop(audioCtx.currentTime + 0.8);
+            osc2.stop(audioCtx.currentTime + 0.8);
+        }
     </script>
 </body>
 </html>
