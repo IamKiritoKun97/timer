@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Timer</title>
+    <style>
+        :root {
+            /* Premium Neutral Palette */
+            --bg-color: #fbfbfa;
+            --surface-color: #ffffff;
+            --text-main: #1a1a1a;
+            --text-muted: #737373;
+            --border-color: #e5e5e5;
+            --accent-color: #0f172a;
+            --accent-hover: #334155;
+            --focus-ring: rgba(15, 23, 42, 0.2);
+            --done-color: #059669; /* Subtle green for completion */
+            --done-bg: #ecfdf5;
+            
+            /* Typography */
+            --font-stack: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            
+            /* Spacing & Layout */
+            --radius-md: 12px;
+            --radius-lg: 24px;
+            --shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+            --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+            
+            /* Transitions */
+            --transition-fast: 0.15s ease;
+            --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            text-align: center;
+            height: 24px; /* Fixed height to prevent layout shift */
+        }
+
+        h1 {
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            opacity: 1;
+            transition: opacity var(--transition-smooth);
+        }
+
+        .status-text {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--done-color);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity var(--transition-smooth);
+            pointer-events: none;
+            background-color: var(--done-bg);
+            padding: 4px 12px;
+            border-radius: 999px;
+        }
+
+        /* Toggle status visibility based on parent class */
+        header.is-done h1 { opacity: 0; }
+        header.is-done .status-text { opacity: 1; }
+
+        .display-container {
+            position: relative;
+            margin-bottom: 4rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .time-display {
+            font-family: var(--font-mono);
+            font-size: clamp(5rem, 15vw, 8rem);
+            font-weight: 300;
+            letter-spacing: -0.02em;
+            line-height: 1;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums; /* Prevents jumping */
+            transition: color var(--transition-smooth), transform var(--transition-smooth);
+        }
+
+        /* Subtle pulse effect for completion */
+        @keyframes subtle-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .time-display.is-done {
+            color: var(--done-color);
+            animation: subtle-pulse 2s ease-in-out;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.75rem;
+            width: 100%;
+            background: var(--surface-color);
+            padding: 0.75rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-subtle);
+            border: 1px solid var(--border-color);
+        }
+
+        .timer-btn {
+            background: transparent;
+            border: none;
+            padding: 1rem 0.5rem;
+            border-radius: var(--radius-md);
+            font-family: var(--font-stack);
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+            outline: none;
+        }
+
+        .timer-btn:hover {
+            color: var(--text-main);
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        .timer-btn:focus-visible {
+            box-shadow: 0 0 0 3px var(--focus-ring);
+            color: var(--text-main);
+        }
+
+        .timer-btn:active {
+            transform: scale(0.97);
+        }
+
+        .timer-btn.active {
+            background-color: var(--accent-color);
+            color: white;
+            box-shadow: var(--shadow-hover);
+        }
+
+        .timer-btn.active:hover {
+            background-color: var(--accent-hover);
+        }
+
+        @media (max-width: 480px) {
+            .app-container {
+                padding: 1.5rem;
+            }
+            
+            .controls-grid {
+                gap: 0.5rem;
+                padding: 0.5rem;
+                border-radius: calc(var(--radius-lg) - 4px);
+            }
+            
+            .timer-btn {
+                padding: 0.875rem 0.25rem;
+                font-size: 0.875rem;
+                border-radius: calc(var(--radius-md) - 2px);
+            }
+        }
+
+        /* Support for reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            .timer-btn:active {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="app-container">
+        
+        <header id="app-header">
+            <h1>Focus Timer</h1>
+            <div class="status-text" aria-live="polite">Done</div>
+        </header>
+
+        <div class="display-container">
+            <div id="time-display" class="time-display" role="timer" aria-live="assertive">00:00</div>
+        </div>
+
+        <nav class="controls-grid" aria-label="Timer durations">
+            <button class="timer-btn" data-minutes="1" aria-label="Start 1 minute timer">1 MIN</button>
+            <button class="timer-btn" data-minutes="2" aria-label="Start 2 minute timer">2 MIN</button>
+            <button class="timer-btn" data-minutes="3" aria-label="Start 3 minute timer">3 MIN</button>
+            <button class="timer-btn" data-minutes="4" aria-label="Start 4 minute timer">4 MIN</button>
+            <button class="timer-btn" data-minutes="5" aria-label="Start 5 minute timer">5 MIN</button>
+        </nav>
+
+    </main>
+
+    <script>
+        // State variables
+        let countdownInterval;
+        let targetTimestamp;
+        let isRunning = false;
+        
+        // DOM Elements
+        const displayEl = document.getElementById('time-display');
+        const headerEl = document.getElementById('app-header');
+        const buttons = document.querySelectorAll('.timer-btn');
+        
+        // Audio Context (initialized on user interaction)
+        let audioCtx;
+
+        /**
+         * STREAMING_CHUNK:Formatting time helper
+         * Formats total seconds into MM:SS string
+         */
+        function formatTime(totalSeconds) {
+            const m = Math.floor(totalSeconds / 60);
+            const s = totalSeconds % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        /**
+         * STREAMING_CHUNK:Updating the display
+         * Updates the visual DOM elements
+         */
+        function updateDisplay(seconds) {
+            displayEl.textContent = formatTime(seconds);
+            // Update document title for background tracking
+            document.title = `${formatTime(seconds)} - Focus Timer`;
+        }
+
+        /**
+         * STREAMING_CHUNK:Web Audio API alarm implementation
+         * Generates a pleasant, clean dual-tone sequence programmatically
+         */
+        function playAlarm() {
+            // Initialize AudioContext if not already done (requires user gesture first)
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            // Ensure context is running (fixes autoplay policies in some browsers)
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const now = audioCtx.currentTime;
+            
+            // Tone 1 (High bell)
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(880, now); // A5
+            
+            // Envelope for Tone 1
+            gain1.gain.setValueAtTime(0, now);
+            gain1.gain.linearRampToValueAtTime(0.5, now + 0.05); // Attack
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6); // Decay/Release
+            
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            
+            osc1.start(now);
+            osc1.stop(now + 0.6);
+
+            // Tone 2 (Higher bell, delayed slightly)
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(1046.50, now + 0.2); // C6
+            
+            // Envelope for Tone 2
+            gain2.gain.setValueAtTime(0, now + 0.2);
+            gain2.gain.linearRampToValueAtTime(0.4, now + 0.25); // Attack
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8); // Decay/Release
+            
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            
+            osc2.start(now + 0.2);
+            osc2.stop(now + 0.8);
+        }
+
+        /**
+         * STREAMING_CHUNK:Handling completion state
+         * Triggers when timer reaches 0
+         */
+        function finishTimer() {
+            stopTimer();
+            updateDisplay(0);
+            
+            // Visual feedback
+            displayEl.classList.add('is-done');
+            headerEl.classList.add('is-done');
+            document.title = "Done - Focus Timer";
+            
+            // Remove active button states
+            buttons.forEach(b => b.classList.remove('active'));
+            
+            // Audio feedback
+            playAlarm();
+        }
+
+        /**
+         * STREAMING_CHUNK:Stopping the timer loop
+         */
+        function stopTimer() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            isRunning = false;
+        }
+
+        /**
+         * STREAMING_CHUNK:Main timer logic
+         * Starts a new countdown using absolute timestamps to prevent drifting
+         */
+        function startTimer(minutes, buttonEl) {
+            // Initialize audio context on first user interaction to satisfy browser policies
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            stopTimer(); // Cancel any existing timer
+            
+            // Reset visual states
+            displayEl.classList.remove('is-done');
+            headerEl.classList.remove('is-done');
+            
+            // Update button UI
+            buttons.forEach(b => b.classList.remove('active'));
+            buttonEl.classList.add('active');
+
+            // Setup new timer parameters
+            const durationInSeconds = minutes * 60;
+            targetTimestamp = Date.now() + (durationInSeconds * 1000);
+            isRunning = true;
+            
+            // Immediate first update
+            updateDisplay(durationInSeconds);
+
+            // Start interval loop
+            countdownInterval = setInterval(() => {
+                const now = Date.now();
+                const remainingMilliseconds = targetTimestamp - now;
+                const remainingSeconds = Math.round(remainingMilliseconds / 1000);
+
+                if (remainingSeconds <= 0) {
+                    finishTimer();
+                } else {
+                    updateDisplay(remainingSeconds);
+                }
+            }, 200); // Check frequently (5x a second) to ensure UI updates closely align with the actual second passing
+        }
+
+        /**
+         * STREAMING_CHUNK:Event Listeners setup
+         */
+        buttons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const minutes = parseInt(e.target.getAttribute('data-minutes'), 10);
+                if (minutes && !isNaN(minutes)) {
+                    startTimer(minutes, e.target);
+                }
+            });
+        });
+
+        // Initialize display to zero state on load without triggering alarms
+        updateDisplay(0);
+
+    </script>
+</body>
+</html>
